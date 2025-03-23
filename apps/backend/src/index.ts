@@ -2,19 +2,37 @@ import { WebSocket, WebSocketServer } from "ws";
 
 const wss = new WebSocketServer({ port: 7070 });
 
-const connectedUsers: WebSocket[] = [];
+const rooms: Record<string, Set<WebSocket>> = {};
+
+enum MESSAGE_ACTIONS {
+  JOIN = "JOIN",
+  CHAT = "CHAT",
+}
 
 wss.on("connection", (ws) => {
   ws.on("error", console.error);
   console.log("connected..");
-  connectedUsers.push(ws);
 
   ws.on("message", function message(data) {
-    for (let i = 0; i < connectedUsers.length; i++) {
-      const message = data.toString();
-      const s = connectedUsers[i];
+    const parsedData = JSON.parse(data.toString() || "{}");
+    console.log("parsedData", parsedData);
 
-      s.send(message);
+    if (parsedData.type === MESSAGE_ACTIONS.JOIN) {
+      if (!rooms[parsedData.payload.room_id]) {
+        rooms[parsedData.payload.room_id] = new Set();
+        console.log("user connected with room " + parsedData.payload.room_id);
+      }
+      rooms[parsedData.payload.room_id].add(ws);
+    }
+
+    if (parsedData.type === MESSAGE_ACTIONS.CHAT) {
+      const usersConnectedToCurrentRoom = rooms[parsedData.payload.room_id];
+      console.log("size", usersConnectedToCurrentRoom.size);
+      for (const userSocket of usersConnectedToCurrentRoom) {
+        userSocket.send(
+          JSON.stringify({ message: parsedData.payload.message })
+        );
+      }
     }
   });
 });
