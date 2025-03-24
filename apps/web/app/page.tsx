@@ -1,22 +1,58 @@
-'use client'
-import React, { useState } from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 
 const ChatPage = () => {
   const [messages, setMessages] = useState<string[]>([]);
   const [message, setMessage] = useState("");
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
 
   const sendMessage = () => {
-    if (!message.trim()) return; 
-    setMessages((prev) => [...prev, message]); 
-    setMessage(""); 
+    if (!message.trim() || !ws) return console.log("message or ws is null");
+
+    ws.send(
+      JSON.stringify({
+        type: "CHAT",
+        payload: {
+          room_id: roomId,
+          message,
+        },
+      })
+    );
+    setMessage("");
   };
+
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:8080");
+
+    ws.onopen = () => {
+      console.log("Connected to websocket");
+      const room_id = prompt("Enter room_id to connect to the room.");
+
+      if (room_id) {
+        setRoomId(room_id);
+        ws.send(JSON.stringify({ type: "JOIN", payload: { room_id } }));
+      }
+      setWs(ws);
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      setMessages(prev => [...prev, data.message])
+      console.log();
+    };
+
+    return () => ws.close()
+  }, []);
 
   return (
     <div className="h-screen w-screen flex">
       {/* Sidebar */}
       <aside className="w-2/10 border-r p-6 bg-gray-100 flex flex-col">
         <h2 className="text-lg font-semibold">Chat Rooms</h2>
-        <p className="text-sm text-gray-600 mt-2">Select a chat room to start messaging.</p>
+        <p className="text-sm text-gray-600 mt-2">
+          Select a chat room to start messaging.
+        </p>
       </aside>
 
       {/* Chat Main Section */}
