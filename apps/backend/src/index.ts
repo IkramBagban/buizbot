@@ -27,7 +27,6 @@ wss.on("connection", (ws) => {
 
     if (parsedData.type === MESSAGE_ACTIONS.CHAT) {
       const usersConnectedToCurrentRoom = rooms[parsedData.payload.room_id];
-      console.log("size", usersConnectedToCurrentRoom.size);
       for (const userSocket of usersConnectedToCurrentRoom) {
         userSocket.send(
           JSON.stringify({ message: parsedData.payload.message })
