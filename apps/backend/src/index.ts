@@ -1,6 +1,9 @@
 import { WebSocket, WebSocketServer } from "ws";
 
-const wss = new WebSocketServer({ port: 7070 });
+const PORT = 8080
+const wss = new WebSocketServer({ port: PORT });
+console.log(`port is listening at ${PORT}`)
+
 
 const rooms: Record<string, Set<WebSocket>> = {};
 
@@ -10,8 +13,8 @@ enum MESSAGE_ACTIONS {
 }
 
 wss.on("connection", (ws) => {
+  console.log("user connected..");
   ws.on("error", console.error);
-  console.log("connected..");
 
   ws.on("message", function message(data) {
     const parsedData = JSON.parse(data.toString() || "{}");
