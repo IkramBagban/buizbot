@@ -47,7 +47,7 @@ const ChatPage = () => {
 
   return (
     <div className="h-screen w-screen flex">
-      {/* Sidebar */}
+      
       <aside className="w-2/10 border-r p-6 bg-gray-100 flex flex-col">
         <h2 className="text-lg font-semibold">Chat Rooms</h2>
         <p className="text-sm text-gray-600 mt-2">
@@ -55,9 +55,7 @@ const ChatPage = () => {
         </p>
       </aside>
 
-      {/* Chat Main Section */}
       <main className="w-8/10 flex flex-col p-6">
-        {/* Chat Header */}
         <header className="border-b pb-3">
           <h1 className="text-xl font-semibold">Chat Room</h1>
         </header>

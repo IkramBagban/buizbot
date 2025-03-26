@@ -12,6 +12,7 @@
   --color-electric-purple: #9b5de5;
 }
 
+/* Animations */
 @keyframes fadeIn {
   0% { opacity: 0; }
   100% { opacity: 1; }
