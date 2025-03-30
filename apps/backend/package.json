@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@repo/common": "workspace:*",
     "@types/express": "^5.0.1",
     "@types/node": "^22.13.11",
     "@types/ws": "^8.18.0",
@@ -18,6 +19,7 @@
     "ws": "^8.18.1"
   },
   "devDependencies": {
+    "install": "^0.13.0",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2"
   }
