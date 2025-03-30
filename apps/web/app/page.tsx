@@ -1,98 +1,128 @@
+// @ts-nocheck
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowDown } from "lucide-react";
 
-const ChatPage = () => {
-  const [messages, setMessages] = useState<string[]>([]);
-  const [message, setMessage] = useState("");
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  const [roomId, setRoomId] = useState<string | null>(null);
+export default function AdminChat() {
+  const [rooms, setRooms] = useState([]);
+  const [selectedRoom, setSelectedRoom] = useState<string>();
+  const [inputMessage, setInputMessage] = useState("");
+  const wsRef = useRef<WebSocket>(null);
+  const messageEndRef = useRef<HTMLDivElement>(null);
 
-  const sendMessage = () => {
-    if (!message.trim() || !ws) return console.log("message or ws is null");
-
-    ws.send(
-      JSON.stringify({
-        type: "CHAT",
-        payload: {
-          room_id: roomId,
-          message,
-        },
-      })
-    );
-    setMessage("");
-  };
+  const scrollToBottom = useCallback(() => {
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8080");
+    wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log("Connected to websocket");
-      const room_id = prompt("Enter room_id to connect to the room.");
-
-      if (room_id) {
-        setRoomId(room_id);
-        ws.send(JSON.stringify({ type: "JOIN", payload: { room_id } }));
-      }
-      setWs(ws);
+      ws.send(JSON.stringify({ type: "JOIN", role: "ADMIN" }));
     };
 
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      setMessages(prev => [...prev, data.message])
-      console.log();
+      const message = JSON.parse(event.data);
+      console.log('message', message)
+
+      if (message.type === "ROOM_LIST") {
+        setRooms(message.payload);
+      } else if (message.type === "CHAT") {
+        setRooms((prev) =>
+          prev.map((room) =>
+            room.roomId === message.payload.roomId
+              ? {
+                  ...room,
+                  messageHistory: [...room.messageHistory, message.payload],
+                }
+              : room
+          )
+        );
+      }
     };
 
-    return () => ws.close()
+    return () => ws.close();
   }, []);
 
+  const sendMessage = useCallback(() => {
+    if (!inputMessage.trim() || !selectedRoom || !wsRef.current) return;
+
+    const payload = {
+      roomId: selectedRoom,
+      content: inputMessage,
+      timestamp: Date.now(),
+      direction: "out" as const,
+      senderId: "ADMIN",
+      recipientId: selectedRoom,
+    };
+    console.log('send',{ type: "CHAT", payload })
+    wsRef.current.send(JSON.stringify({ type: "CHAT", payload }));
+    setInputMessage("");
+  }, [inputMessage, selectedRoom]);
+
+  const currentRoom = rooms.find((r) => r.roomId === selectedRoom);
+
   return (
-    <div className="h-screen w-screen flex">
-      
-      <aside className="w-2/10 border-r p-6 bg-gray-100 flex flex-col">
-        <h2 className="text-lg font-semibold">Chat Rooms</h2>
-        <p className="text-sm text-gray-600 mt-2">
-          Select a chat room to start messaging.
-        </p>
-      </aside>
+    <div className="flex h-screen">
+      <div className="w-80 border-r p-4 overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4">Active Chats</h2>
+        {rooms.map((room) => (
+          <button
+            key={room.roomId}
+            onClick={() => setSelectedRoom(room.roomId)}
+            className={`w-full text-left p-3 mb-2 rounded ${
+              selectedRoom === room.roomId ? "bg-blue-100" : "hover:bg-gray-100"
+            }`}
+          >
+            <div className="font-medium">{room.userMetadata.name}</div>
+            <div className="text-sm text-gray-600">{room.roomId}</div>
+          </button>
+        ))}
+      </div>
 
-      <main className="w-8/10 flex flex-col p-6">
-        <header className="border-b pb-3">
-          <h1 className="text-xl font-semibold">Chat Room</h1>
-        </header>
-
-        <section className="flex-grow overflow-y-auto p-4 bg-gray-50 border rounded-md mt-4 space-y-2">
-          {messages.length > 0 ? (
-            messages.map((msg, index) => (
-              <div key={index} className="bg-white p-2 rounded shadow border">
-                {msg}
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 overflow-y-auto p-4">
+          {currentRoom?.messageHistory.map((msg, i) => (
+            <div
+              key={i}
+              className={`mb-4 p-3 rounded-lg max-w-[70%] ${
+                msg.direction === "out"
+                  ? "ml-auto bg-blue-500 text-white"
+                  : "bg-gray-100"
+              }`}
+            >
+              <div className="text-sm">{msg.content}</div>
+              <div className="text-xs mt-1 opacity-70">
+                {new Date(msg.timestamp).toLocaleTimeString()}
               </div>
-            ))
-          ) : (
-            <p className="text-gray-500 text-center">No messages yet...</p>
-          )}
-        </section>
+            </div>
+          ))}
+          <div ref={messageEndRef} />
+        </div>
 
-        <footer className="mt-4">
-          <div className="w-full flex items-center gap-3 border rounded-lg p-3 shadow-md bg-white">
+        <ArrowDown onClick={scrollToBottom} />
+
+        <div className="border-t p-4">
+          <div className="flex gap-2">
             <input
-              type="text"
-              className="flex-1 p-3 rounded-md border focus:outline-none"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Type a message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()} // Send on Enter
+              className="flex-1 p-2 border rounded"
+              disabled={!selectedRoom}
             />
             <button
               onClick={sendMessage}
-              className="w-[8rem] bg-blue-500 text-white rounded-md py-2 hover:bg-blue-600 transition"
+              className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+              disabled={!selectedRoom}
             >
               Send
             </button>
           </div>
-        </footer>
-      </main>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default ChatPage;
+}
