@@ -3,14 +3,6 @@
 import prisma from "@repo/db";
 import bcrypt from "bcrypt";
 
-import { getServerSession } from "next-auth";
-import authOptions from "../app/lib/auth";
-
-export async function checkAuthentication() {
-  const session = await getServerSession(authOptions);
-  return !!session?.user?.email;
-}
-
 export const registerUser = async (formData: FormData) => {
   try {
     const name = formData.get("name") as string;
