@@ -2,6 +2,7 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDown } from "lucide-react";
+import { signIn } from "next-auth/react";
 
 export default function AdminChat() {
   const [rooms, setRooms] = useState([]);
@@ -24,7 +25,7 @@ export default function AdminChat() {
 
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      console.log('message', message)
+      console.log("message", message);
 
       if (message.type === "ROOM_LIST") {
         setRooms(message.payload);
@@ -56,7 +57,7 @@ export default function AdminChat() {
       senderId: "ADMIN",
       recipientId: selectedRoom,
     };
-    console.log('send',{ type: "CHAT", payload })
+    console.log("send", { type: "CHAT", payload });
     wsRef.current.send(JSON.stringify({ type: "CHAT", payload }));
     setInputMessage("");
   }, [inputMessage, selectedRoom]);
@@ -65,6 +66,7 @@ export default function AdminChat() {
 
   return (
     <div className="flex h-screen">
+      <button onClick={() => signIn()}>Signin</button>
       <div className="w-80 border-r p-4 overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">Active Chats</h2>
         {rooms.map((room) => (
