@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const signInSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -14,6 +15,7 @@ const signInSchema = z.object({
 type SignInFormData = z.infer<typeof signInSchema>;
 
 const SignIn = () => {
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -32,13 +34,14 @@ const SignIn = () => {
         redirect: false,
         email: data.email,
         password: data.password,
-        callbackUrl: "/",
+        callbackUrl: "/chats", 
       });
 
       if (result?.error) {
         setMessage(result.error);
       } else if (result?.url) {
         setMessage("Sign-in successful! Redirecting...");
+        router.push(result.url || "/chats");
       }
     } catch (error) {
       setMessage("An unexpected error occurred. Please try again.");
@@ -48,7 +51,7 @@ const SignIn = () => {
 
   useEffect(() => {
     if (message) {
-      const timer = setTimeout(() => setMessage(null), 5000);
+      const timer = setTimeout(() => setMessage(null), 2000);
       return () => clearTimeout(timer);
     }
   }, [message]);
