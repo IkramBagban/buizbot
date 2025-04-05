@@ -2,17 +2,22 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Send } from "lucide-react";
 import { ChatMessage, MessageType, UserRole } from "@repo/common/types";
+import { useParams } from "next/navigation";
 // import './styles.css';
 
 const LOCAL_STORAGE_KEY = "buizbotUser";
-
-const Chatbot = ({ wsUrl = "ws://localhost:8080" }: { wsUrl: string }) => {
+const wsUrl = "ws://localhost:8080";
+const Chatbot = () => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [messageHistory, setMessageHistory] = useState<ChatMessage[]>([]);
   const [messageInput, setMessageInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState({ email: "", name: "" });
   const [showForm, setShowForm] = useState(false);
+  const params = useParams();
+  console.log("params", params);
+
+  console.log("tenantId", params.tenantId);
 
   const joinUser = ({
     ws,
@@ -43,7 +48,7 @@ const Chatbot = ({ wsUrl = "ws://localhost:8080" }: { wsUrl: string }) => {
           ws,
           type: "JOIN",
           role: "USER",
-          payload: { email: parsedUser.email, name: parsedUser.name },
+          payload: { email: parsedUser.email, name: parsedUser.name,  tenantId: params.tenantId as string , USER: parsedUser.email},
         });
       }
     };
@@ -68,7 +73,7 @@ const Chatbot = ({ wsUrl = "ws://localhost:8080" }: { wsUrl: string }) => {
 
     setSocket(ws);
     return () => ws.close();
-  }, [wsUrl]);
+  }, []);
 
   const toggleChat = useCallback(() => {
     setIsOpen(true);
@@ -88,10 +93,10 @@ const Chatbot = ({ wsUrl = "ws://localhost:8080" }: { wsUrl: string }) => {
         ws: socket,
         type: "JOIN",
         role: "USER",
-        payload: { email: user.email, name: user.name },
+        payload: { email: user.email, name: user.name,  tenantId: params.tenantId as string, USER: user.email },
       });
     },
-    [user, socket]
+    [user, socket, params.tenantId]
   );
 
   const sendMessage = useCallback(() => {
@@ -100,8 +105,9 @@ const Chatbot = ({ wsUrl = "ws://localhost:8080" }: { wsUrl: string }) => {
       return;
     }
 
-    const payload: ChatMessage & { roomId: string } = {
+    const payload: ChatMessage & { roomId: string; tenantId: string } = {
       roomId: user.email,
+      tenantId: params.tenantId as string ,
       content: messageInput,
       timestamp: Date.now(),
       senderId: user.email,
@@ -114,15 +120,14 @@ const Chatbot = ({ wsUrl = "ws://localhost:8080" }: { wsUrl: string }) => {
       payload,
     ]);
 
-    // @ts-ignore
     socket.send(
       JSON.stringify({
         type: "CHAT",
         payload,
-      })
+      })  
     );
     setMessageInput("");
-  }, [socket, messageInput, user]);
+  }, [socket, messageInput, user, params.tenantId]);
 
   return (
     <div className="fixed inset-0 w-screen h-screen pointer-events-none">
