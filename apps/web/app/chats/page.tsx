@@ -18,9 +18,12 @@ export default function AdminChat() {
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8080");
     wsRef.current = ws;
+    const tenantId = prompt("enter your tenantId");
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "JOIN", role: "ADMIN" }));
+      ws.send(
+        JSON.stringify({ type: "JOIN", role: "ADMIN", payload: { tenantId , USER: "ADMIN"} })
+      );
     };
 
     ws.onmessage = (event) => {
