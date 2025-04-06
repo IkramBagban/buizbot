@@ -9,7 +9,7 @@ export default function AdminChat() {
   const [inputMessage, setInputMessage] = useState("");
   const wsRef = useRef<WebSocket>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
-
+  const [tenantId, setTenantId] = useState(null);
 
   const scrollToBottom = useCallback(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -18,11 +18,15 @@ export default function AdminChat() {
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8080");
     wsRef.current = ws;
-    const tenantId = prompt("enter your tenantId");
-
+    const _tenantId = prompt("enter your tenantId");
+    setTenantId(_tenantId);
     ws.onopen = () => {
       ws.send(
-        JSON.stringify({ type: "JOIN", role: "ADMIN", payload: { tenantId , USER: "ADMIN"} })
+        JSON.stringify({
+          type: "JOIN",
+          role: "ADMIN",
+          payload: { tenantId: _tenantId, USER: "ADMIN" },
+        })
       );
     };
 
@@ -59,11 +63,12 @@ export default function AdminChat() {
       direction: "out" as const,
       senderId: "ADMIN",
       recipientId: selectedRoom,
+      tenantId,
     };
     console.log("send", { type: "CHAT", payload });
     wsRef.current.send(JSON.stringify({ type: "CHAT", payload }));
     setInputMessage("");
-  }, [inputMessage, selectedRoom]);
+  }, [inputMessage, selectedRoom, tenantId]);
 
   const currentRoom = rooms.find((r) => r.roomId === selectedRoom);
 
